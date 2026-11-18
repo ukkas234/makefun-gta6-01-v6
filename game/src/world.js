@@ -1,0 +1,15 @@
+import * as T from '../vendor/three.module.js';
+export const scene=new T.Scene(), camera=new T.PerspectiveCamera(62,innerWidth/innerHeight,.1,1000), renderer=new T.WebGLRenderer({canvas:document.querySelector('#game'),antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=false;scene.background=new T.Color(0x93b9c7);scene.fog=new T.Fog(0x93b9c7,180,550);scene.add(new T.HemisphereLight(0xe4f5ff,0x5d6656,2));let sun=new T.DirectionalLight(0xffe4b5,2.2);sun.position.set(-100,170,80);scene.add(sun);addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+const mat=(color,roughness=1)=>new T.MeshStandardMaterial({color,roughness});export const mats={road:mat(0x343d43),side:mat(0x9e9c8e),grass:mat(0x526f55),sand:mat(0xc8ad77),water:mat(0x2e8094),white:mat(0xe9e3d2),glass:new T.MeshStandardMaterial({color:0x183741,metalness:.35,roughness:.25}),skin:mat(0xc78d68),dark:mat(0x1b2529),gold:mat(0xd0a849)};
+const box=(w,h,d,m,x,y,z)=>{let o=new T.Mesh(new T.BoxGeometry(w,h,d),m);o.position.set(x,y,z);scene.add(o);return o};
+export const city={buildings:[],collide(x,z,r=1){return this.buildings.some(b=>Math.abs(x-b.x)<b.w/2+r&&Math.abs(z-b.z)<b.d/2+r)}};
+box(590,1,590,mats.grass,0,-.7,0);box(560,.18,560,mats.road,0,-.1,0);
+// 10x10 street grid; plazas and the south coast are distinctive city edges.
+for(let i=-5;i<=5;i++){let p=i*52;box(12,.12,540,mats.road,p,0,0);box(540,.12,12,mats.road,0,0,p);for(let k=-4;k<=4;k++){box(.18,.03,7,mat(0xd8d2ae),p,.08,k*52+22);box(7,.03,.18,mat(0xd8d2ae),k*52+22,.08,p)}}
+box(570,2,80,mats.sand,0,.05,300);box(650,5,120,mats.water,0,-1,385);
+let seed=7;const rand=()=>((seed=(seed*1664525+1013904223)>>>0)/4294967296);
+const colors=[0xd4c5a3,0xc6b294,0x93a8a4,0xd6d2c3,0xb3bdaf,0xc7a18c,0x8da6ae,0xe1d5bd];
+for(let gx=-5;gx<5;gx++)for(let gz=-5;gz<5;gz++){if(rand()<.07)continue;let count=1+Math.floor(rand()*3);for(let j=0;j<count;j++){let w=10+rand()*11,d=10+rand()*12,h=12+rand()*48,x=gx*52+(rand()-.5)*22,z=gz*52+(rand()-.5)*22;if(Math.abs(x)>260||Math.abs(z)>260)continue;let base=mat(colors[Math.floor(rand()*colors.length)]),b=box(w,h,d,base,x,h/2,z);city.buildings.push({x,z,w,d,mesh:b});for(let y=4;y<h-2;y+=5){for(let side of [-1,1]){let win=box(1.4,1.7,.12,new T.MeshStandardMaterial({color:rand()>.45?0x8bc8c1:0x273b43,emissive:rand()>.8?0x223b30:0x000000}),x+(rand()-.5)*w*.7,y,z+side*(d/2+.07));}}}}
+for(let x=-245;x<=245;x+=52)for(let z=-245;z<=245;z+=52){let pole=new T.Mesh(new T.CylinderGeometry(.13,.17,5),mat(0x37423e));pole.position.set(x+6,2.5,z+6);scene.add(pole);let lamp=new T.Mesh(new T.SphereGeometry(.35,8,6),new T.MeshBasicMaterial({color:0xffdc9b}));lamp.position.set(x+6,5,z+6);scene.add(lamp)}
+export function setNight(t){let night=(1+Math.cos(t*Math.PI*2))/2;scene.background=new T.Color().setRGB(.04+night*.35,.07+night*.38,.11+night*.4);scene.fog.color.copy(scene.background);sun.intensity=.25+night*2;}
